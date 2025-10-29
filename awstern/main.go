@@ -31,11 +31,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	cwlogs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	ecstypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/spf13/cobra"
+
+	"github.com/zchee/awstools/pkg/awsconfig"
 )
 
 const version = "0.0.1"
@@ -202,7 +203,7 @@ func run(ctx context.Context, opt options) error {
 		return err
 	}
 
-	cfg, err := loadCfg(ctx, opt.region, opt.profile)
+	cfg, err := awsconfig.LoadConfig(ctx, opt.region, opt.profile)
 	if err != nil {
 		return fmt.Errorf("load AWS config: %w", err)
 	}
@@ -281,7 +282,7 @@ func run(ctx context.Context, opt options) error {
 			return c
 		}
 		if region != cfg.Region {
-			alt, _ := loadCfg(ctx, region, opt.profile)
+			alt, _ := awsconfig.LoadConfig(ctx, region, opt.profile)
 			mu.Lock()
 			byRegion[region] = cwlogs.NewFromConfig(alt)
 			mu.Unlock()
@@ -335,17 +336,6 @@ func parseSince(s string) (time.Time, error) {
 		return t, nil
 	}
 	return time.Time{}, fmt.Errorf("invalid --since; use duration (e.g., 30m) or RFC3339 (e.g., 2025-10-01T12:00:00Z)")
-}
-
-func loadCfg(ctx context.Context, region, profile string) (aws.Config, error) {
-	var opts []func(*awsconfig.LoadOptions) error
-	if region != "" {
-		opts = append(opts, awsconfig.WithRegion(region))
-	}
-	if profile != "" {
-		opts = append(opts, awsconfig.WithSharedConfigProfile(profile))
-	}
-	return awsconfig.LoadDefaultConfig(ctx, opts...)
 }
 
 func listTasks(ctx context.Context, ecsCli *ecs.Client, cluster, service, family string) ([]taskInfo, error) {
@@ -511,7 +501,7 @@ func resolveStreamsForTask(ctx context.Context, cfg aws.Config, task taskInfo, c
 			return c
 		}
 		if region != cfg.Region {
-			alt, _ := loadCfg(ctx, region, "")
+			alt, _ := awsconfig.LoadConfig(ctx, region, "")
 			byRegion[region] = cwlogs.NewFromConfig(alt)
 		} else {
 			byRegion[region] = cwlogs.NewFromConfig(cfg)
