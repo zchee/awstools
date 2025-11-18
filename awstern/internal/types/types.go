@@ -14,24 +14,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package awsconfig
+package types
 
-import (
-	"context"
-	"fmt"
+import "time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-
-	"github.com/zchee/awstools/pkg/awssmithy"
-)
-
-func LoadConfig(ctx context.Context, opts ...func(*config.LoadOptions) error) (cfg aws.Config, err error) {
-	cfg, err = config.LoadDefaultConfig(ctx, opts...)
-	if err != nil {
-		return cfg, fmt.Errorf("load default AWS config: %w", err)
-	}
-	cfg.Logger = awssmithy.AdaptLogger(ctx)
-
-	return cfg, nil
+// LogEvent represents a single CloudWatch log event.
+type LogEvent struct {
+	Timestamp     time.Time
+	Message       string
+	LogGroupName  string
+	LogStreamName string
 }
